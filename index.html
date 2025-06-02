@@ -1,1 +1,1097 @@
-<h1>测试一下</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级浏览器 - 支持UA修改和设备模式</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #1a2a6c;
+            --background-dark: #121212;
+            --toolbar-dark: #1e1e1e;
+            --panel-dark: #252525;
+            --border-dark: #333;
+            --text-light: #f0f0f0;
+            --text-muted: #aaa;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--secondary-color), #b21f1f, var(--secondary-color));
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            color: var(--text-light);
+        }
+        
+        .browser-container {
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            background: var(--background-dark);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* 顶部工具栏 */
+        .toolbar {
+            background: var(--toolbar-dark);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-dark);
+            gap: 15px;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #333;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .nav-btn:hover {
+            background: #3a3a3a;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 地址栏 */
+        .address-bar {
+            flex: 1;
+            display: flex;
+            background: #2a2a2a;
+            border-radius: 28px;
+            padding: 5px 20px;
+            align-items: center;
+            position: relative;
+            border: 1px solid var(--border-dark);
+            transition: all 0.3s;
+        }
+        
+        .address-bar:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+        }
+        
+        .security-indicator {
+            margin-right: 10px;
+            font-size: 16px;
+            min-width: 20px;
+        }
+        
+        .url-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            padding: 10px 0;
+            font-size: 15px;
+            outline: none;
+            height: 100%;
+        }
+        
+        .go-btn {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(74, 144, 226, 0.3);
+        }
+        
+        .go-btn:hover {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+        }
+        
+        /* 控制面板 */
+        .control-panel {
+            background: var(--panel-dark);
+            padding: 16px 20px;
+            display: flex;
+            border-bottom: 1px solid var(--border-dark);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .panel-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .panel-select, .panel-input {
+            background: #333;
+            border: 1px solid #444;
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+            min-height: 40px;
+        }
+        
+        .panel-select:focus, .panel-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+        }
+        
+        .panel-select {
+            min-width: 200px;
+        }
+        
+        .panel-input {
+            min-width: 350px;
+        }
+        
+        .mode-toggle {
+            display: flex;
+            background: #333;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        /* 浏览器内容区域 */
+        .browser-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            background: #0a0a0a;
+        }
+        
+        .browser-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        /* 手机模式 */
+        .phone-mode .browser-frame {
+            width: 375px;
+            height: 667px;
+            margin: auto;
+            border-radius: 32px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border: 14px solid #111;
+            border-top-width: 50px;
+            border-bottom-width: 50px;
+            position: relative;
+        }
+        
+        .phone-mode .browser-frame::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 6px;
+            background: #333;
+            border-radius: 6px;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            padding: 12px 20px;
+            background: var(--toolbar-dark);
+            color: var(--text-muted);
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border-dark);
+        }
+        
+        .status-info {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(74, 144, 226, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 历史记录面板 */
+        .history-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100%;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        }
+        
+        .history-panel.open {
+            transform: translateX(0);
+        }
+        
+        .history-header {
+            color: var(--text-light);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-dark);
+        }
+        
+        .close-history {
+            background: #333;
+            border: none;
+            color: var(--text-light);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .close-history:hover {
+            background: var(--primary-color);
+        }
+        
+        .history-item {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid transparent;
+        }
+        
+        .history-item:hover {
+            background: #333;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .favicon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .history-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .history-title {
+            font-size: 15px;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+        
+        .history-url {
+            font-size: 13px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .history-time {
+            font-size: 12px;
+            color: #777;
+        }
+        
+        /* 错误提示 */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 14px;
+            text-align: center;
+            max-width: 80%;
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            width: 500px;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        .error-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .error-detail {
+            font-size: 15px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .error-solution {
+            font-size: 14px;
+            margin-top: 15px;
+            color: #ffeb3b;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .proxy-info {
+            color: #a0d2ff;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1100px) {
+            .control-panel {
+                gap: 15px;
+            }
+            
+            .panel-group {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .panel-input {
+                min-width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 10px 15px;
+            }
+            
+            .address-bar {
+                padding: 5px 12px;
+            }
+            
+            .go-btn {
+                padding: 8px 16px;
+            }
+            
+            .control-panel {
+                padding: 12px 15px;
+            }
+            
+            .panel-select {
+                min-width: 150px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        
+        /* 服务指示器 */
+        .service-indicator {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: var(--text-light);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+        
+        .indicator-dot.warning {
+            background: var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="browser-container">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="nav-buttons">
+                <button class="nav-btn" id="back-btn" disabled>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button class="nav-btn" id="forward-btn" disabled>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <button class="nav-btn" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="nav-btn" id="home-btn">
+                    <i class="fas fa-home"></i>
+                </button>
+            </div>
+            
+            <div class="address-bar">
+                <span class="security-indicator" id="security-indicator">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <input type="text" class="url-input" id="url-input" placeholder="输入网址或搜索内容" value="https://www.wikipedia.org">
+                <button class="go-btn" id="go-btn">前往</button>
+            </div>
+            
+            <button class="nav-btn" id="history-btn">
+                <i class="fas fa-history"></i>
+            </button>
+            <button class="nav-btn" id="menu-btn">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </div>
+        
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="panel-group">
+                <span class="panel-label">设备模式:</span>
+                <div class="mode-toggle">
+                    <button class="mode-btn active" data-mode="desktop">
+                        <i class="fas fa-desktop"></i> 电脑
+                    </button>
+                    <button class="mode-btn" data-mode="phone">
+                        <i class="fas fa-mobile-alt"></i> 手机
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-group">
+                <span class="panel-label">用户代理(UA):</span>
+                <select class="panel-select" id="ua-select">
+                    <option value="desktop">桌面浏览器 (Chrome)</option>
+                    <option value="mobile">移动设备 (iPhone)</option>
+                    <option value="custom">自定义UA</option>
+                </select>
+            </div>
+            
+            <div class="panel-group" id="custom-ua-group" style="display: none;">
+                <span class="panel-label">自定义UA:</span>
+                <input type="text" class="panel-input" id="custom-ua" placeholder="输入自定义User-Agent字符串">
+            </div>
+            
+            <div class="panel-group">
+                <span class="panel-label">代理服务:</span>
+                <select class="panel-select" id="proxy-select">
+                    <option value="none">无代理</option>
+                    <option value="cors1" selected>CORS代理 (主)</option>
+                    <option value="cors2">CORS代理 (备)</option>
+                    <option value="allorigins">AllOrigins代理</option>
+                    <option value="custom">自定义代理</option>
+                </select>
+            </div>
+            
+            <div class="panel-group" id="custom-proxy-group" style="display: none;">
+                <span class="panel-label">代理URL:</span>
+                <input type="text" class="panel-input" id="custom-proxy" placeholder="输入代理URL格式">
+            </div>
+        </div>
+        
+        <!-- 服务指示器 -->
+        <div class="service-indicator">
+            <div class="indicator-dot" id="service-indicator"></div>
+            <span id="service-text">服务已激活</span>
+        </div>
+        
+        <!-- 浏览器内容区域 -->
+        <div class="browser-content" id="browser-content">
+            <div class="error-message" id="error-message" style="display: none;">
+                <div class="error-title">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <span id="error-title">无法加载网页</span>
+                </div>
+                <div class="error-detail" id="error-detail"></div>
+                <div class="error-solution">尝试自动切换代理中...</div>
+                <div class="proxy-info" id="proxy-info"></div>
+            </div>
+            
+            <iframe class="browser-frame" id="browser-frame" src="https://www.wikipedia.org"></iframe>
+            
+            <!-- 历史记录面板 -->
+            <div class="history-panel" id="history-panel">
+                <div class="history-header">
+                    <h3><i class="fas fa-history"></i> 浏览历史</h3>
+                    <button class="close-history" id="close-history">×</button>
+                </div>
+                <div id="history-list">
+                    <!-- 历史记录将通过JS动态添加 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-info">
+                <div class="loading-indicator" id="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>正在加载...</span>
+                </div>
+                <div id="current-ua">UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36</div>
+            </div>
+            <div id="device-mode">设备模式: 电脑</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const browserFrame = document.getElementById('browser-frame');
+            const urlInput = document.getElementById('url-input');
+            const goBtn = document.getElementById('go-btn');
+            const backBtn = document.getElementById('back-btn');
+            const forwardBtn = document.getElementById('forward-btn');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const homeBtn = document.getElementById('home-btn');
+            const historyBtn = document.getElementById('history-btn');
+            const closeHistory = document.getElementById('close-history');
+            const historyPanel = document.getElementById('history-panel');
+            const historyList = document.getElementById('history-list');
+            const uaSelect = document.getElementById('ua-select');
+            const customUaGroup = document.getElementById('custom-ua-group');
+            const customUa = document.getElementById('custom-ua');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            const browserContent = document.getElementById('browser-content');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const errorMessage = document.getElementById('error-message');
+            const errorTitle = document.getElementById('error-title');
+            const errorDetail = document.getElementById('error-detail');
+            const proxyInfo = document.getElementById('proxy-info');
+            const proxySelect = document.getElementById('proxy-select');
+            const customProxyGroup = document.getElementById('custom-proxy-group');
+            const customProxy = document.getElementById('custom-proxy');
+            const currentUa = document.getElementById('current-ua');
+            const deviceMode = document.getElementById('device-mode');
+            const securityIndicator = document.getElementById('security-indicator');
+            const serviceIndicator = document.getElementById('service-indicator');
+            const serviceText = document.getElementById('service-text');
+            
+            // 浏览历史
+            let history = [];
+            let currentUrl = '';
+            let currentProxy = 'cors1';
+            let isLoading = false;
+            let loadStartTime = 0;
+            let serviceWorkerActive = false;
+            
+            // 代理服务配置
+            const proxyServices = {
+                cors1: 'https://corsproxy.io/?',
+                cors2: 'https://api.codetabs.com/v1/proxy?quest=',
+                allorigins: 'https://api.allorigins.win/raw?url=',
+                custom: ''
+            };
+            
+            // 初始化
+            initBrowser();
+            
+            async function initBrowser() {
+                // 注册Service Worker
+                await registerServiceWorker();
+                
+                // 设置默认UA
+                updateUserAgent('desktop');
+                
+                // 设置初始历史记录
+                addToHistory('Wikipedia', 'https://www.wikipedia.org');
+                
+                // 事件监听
+                goBtn.addEventListener('click', navigate);
+                urlInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') navigate();
+                });
+                
+                backBtn.addEventListener('click', function() {
+                    try {
+                        browserFrame.contentWindow.history.back();
+                    } catch (e) {
+                        showError("无法后退", "由于安全限制，无法访问浏览历史");
+                    }
+                });
+                
+                forwardBtn.addEventListener('click', function() {
+                    try {
+                        browserFrame.contentWindow.history.forward();
+                    } catch (e) {
+                        showError("无法前进", "由于安全限制，无法访问浏览历史");
+                    }
+                });
+                
+                refreshBtn.addEventListener('click', function() {
+                    if (currentUrl) {
+                        loadUrl(currentUrl);
+                    }
+                });
+                
+                homeBtn.addEventListener('click', function() {
+                    loadUrl('https://www.wikipedia.org');
+                });
+                
+                historyBtn.addEventListener('click', function() {
+                    historyPanel.classList.toggle('open');
+                });
+                
+                closeHistory.addEventListener('click', function() {
+                    historyPanel.classList.remove('open');
+                });
+                
+                uaSelect.addEventListener('change', function() {
+                    if (uaSelect.value === 'custom') {
+                        customUaGroup.style.display = 'flex';
+                        customUa.value = browserFrame.dataset.ua || '';
+                    } else {
+                        customUaGroup.style.display = 'none';
+                        updateUserAgent(uaSelect.value);
+                    }
+                });
+                
+                customUa.addEventListener('change', function() {
+                    updateUserAgent('custom');
+                });
+                
+                modeButtons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        modeButtons.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        browserContent.classList.remove('phone-mode', 'desktop-mode');
+                        browserContent.classList.add(this.dataset.mode + '-mode');
+                        
+                        // 更新状态栏
+                        deviceMode.textContent = `设备模式: ${this.dataset.mode === 'desktop' ? '电脑' : '手机'}`;
+                    });
+                });
+                
+                proxySelect.addEventListener('change', function() {
+                    currentProxy = proxySelect.value;
+                    
+                    if (currentProxy === 'custom') {
+                        customProxyGroup.style.display = 'flex';
+                        customProxy.value = proxyServices.custom;
+                    } else {
+                        customProxyGroup.style.display = 'none';
+                    }
+                    
+                    if (currentUrl) {
+                        loadUrl(currentUrl);
+                    }
+                });
+                
+                customProxy.addEventListener('change', function() {
+                    proxyServices.custom = customProxy.value.trim();
+                });
+                
+                // 监听iframe加载完成
+                browserFrame.addEventListener('load', function() {
+                    isLoading = false;
+                    loadingIndicator.style.display = 'none';
+                    errorMessage.style.display = 'none';
+                    
+                    const loadTime = (Date.now() - loadStartTime) / 1000;
+                    console.log(`页面加载完成，耗时: ${loadTime.toFixed(2)}秒`);
+                    
+                    try {
+                        const title = browserFrame.contentDocument.title || '无标题';
+                        const url = browserFrame.contentWindow.location.href;
+                        
+                        // 更新地址栏
+                        urlInput.value = url;
+                        currentUrl = url;
+                        
+                        // 更新安全指示器
+                        updateSecurityIndicator(url);
+                        
+                        // 添加到历史记录
+                        addToHistory(title, url);
+                        
+                        // 更新导航按钮状态
+                        try {
+                            backBtn.disabled = !browserFrame.contentWindow.history.length || 
+                                              browserFrame.contentWindow.history.state?.backDisabled;
+                            forwardBtn.disabled = !browserFrame.contentWindow.history.forward || 
+                                               browserFrame.contentWindow.history.state?.forwardDisabled;
+                        } catch (e) {
+                            // 跨域限制
+                            backBtn.disabled = true;
+                            forwardBtn.disabled = true;
+                        }
+                    } catch (e) {
+                        // 跨域限制
+                        backBtn.disabled = true;
+                        forwardBtn.disabled = true;
+                    }
+                });
+                
+                browserFrame.addEventListener('error', function(e) {
+                    isLoading = false;
+                    loadingIndicator.style.display = 'none';
+                    handleLoadError(e);
+                });
+            }
+            
+            // 注册Service Worker
+            async function registerServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.register('sw.js', {
+                            scope: './'
+                        });
+                        
+                        if (registration.active) {
+                            serviceWorkerActive = true;
+                            updateServiceIndicator(true);
+                            console.log('Service Worker 已激活');
+                        }
+                        
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    serviceWorkerActive = true;
+                                    updateServiceIndicator(true);
+                                }
+                            });
+                        });
+                        
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            serviceWorkerActive = true;
+                            updateServiceIndicator(true);
+                        });
+                        
+                    } catch (error) {
+                        console.error('Service Worker 注册失败:', error);
+                        updateServiceIndicator(false);
+                    }
+                } else {
+                    console.log('当前浏览器不支持 Service Worker');
+                    updateServiceIndicator(false);
+                }
+            }
+            
+            // 更新服务指示器
+            function updateServiceIndicator(active) {
+                const dot = serviceIndicator;
+                const text = serviceText;
+                
+                if (active) {
+                    dot.className = 'indicator-dot';
+                    text.textContent = '服务已激活';
+                    dot.style.backgroundColor = 'var(--success-color)';
+                } else {
+                    dot.className = 'indicator-dot warning';
+                    text.textContent = '服务未激活';
+                    dot.style.backgroundColor = 'var(--warning-color)';
+                }
+            }
+            
+            // 导航函数
+            function navigate() {
+                let url = urlInput.value.trim();
+                
+                // 添加协议前缀
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                }
+                
+                // 更新iframe
+                loadUrl(url);
+            }
+            
+            // 加载URL
+            function loadUrl(url) {
+                isLoading = true;
+                loadingIndicator.style.display = 'flex';
+                errorMessage.style.display = 'none';
+                loadStartTime = Date.now();
+                
+                // 保存当前URL
+                currentUrl = url;
+                
+                // 使用代理服务
+                let targetUrl = url;
+                
+                if (currentProxy !== 'none') {
+                    let proxyUrl = proxyServices[currentProxy];
+                    
+                    if (currentProxy === 'custom') {
+                        proxyUrl = proxyServices.custom;
+                    }
+                    
+                    if (proxyUrl) {
+                        targetUrl = proxyUrl + encodeURIComponent(url);
+                        proxyInfo.textContent = `使用代理: ${currentProxy}`;
+                    } else {
+                        proxyInfo.textContent = '代理配置无效';
+                    }
+                } else {
+                    proxyInfo.textContent = '';
+                }
+                
+                // 更新iframe
+                browserFrame.src = targetUrl;
+                
+                // 更新安全指示器
+                updateSecurityIndicator(url);
+            }
+            
+            // 更新安全指示器
+            function updateSecurityIndicator(url) {
+                if (url.startsWith('https://')) {
+                    securityIndicator.innerHTML = '<i class="fas fa-lock"></i>';
+                    securityIndicator.style.color = 'var(--success-color)';
+                } else if (url.startsWith('http://')) {
+                    securityIndicator.innerHTML = '<i class="fas fa-unlock"></i>';
+                    securityIndicator.style.color = 'var(--warning-color)';
+                } else {
+                    securityIndicator.innerHTML = '';
+                }
+            }
+            
+            // 处理加载错误
+            function handleLoadError(e) {
+                const errorMessages = {
+                    'net::ERR_CONNECTION_CLOSED': '连接已关闭',
+                    'net::ERR_CONNECTION_RESET': '连接被重置',
+                    'net::ERR_CONNECTION_REFUSED': '连接被拒绝',
+                    'net::ERR_NAME_NOT_RESOLVED': '无法解析域名',
+                    'net::ERR_TIMED_OUT': '连接超时',
+                    'net::ERR_ABORTED': '请求被中止'
+                };
+                
+                const errorType = e.message.match(/net::\w+/)?.[0] || '未知错误';
+                const errorDesc = errorMessages[errorType] || '无法加载页面';
+                
+                errorTitle.textContent = `加载失败 (${errorType})`;
+                errorDetail.textContent = `位于 ${currentUrl} 的网页无法加载，因为: ${errorDesc}`;
+                errorMessage.style.display = 'block';
+                
+                // 自动切换代理
+                setTimeout(() => {
+                    if (currentProxy === 'cors1') {
+                        proxySelect.value = 'cors2';
+                        currentProxy = 'cors2';
+                    } else if (currentProxy === 'cors2') {
+                        proxySelect.value = 'allorigins';
+                        currentProxy = 'allorigins';
+                    } else {
+                        proxySelect.value = 'cors1';
+                        currentProxy = 'cors1';
+                    }
+                    
+                    proxyInfo.textContent = `已自动切换至代理: ${currentProxy}`;
+                    loadUrl(currentUrl);
+                }, 3000);
+            }
+            
+            // 更新User-Agent
+            function updateUserAgent(type) {
+                let uaString;
+                
+                switch(type) {
+                    case 'desktop':
+                        uaString = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36';
+                        break;
+                    case 'mobile':
+                        uaString = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1';
+                        break;
+                    case 'custom':
+                        uaString = customUa.value.trim();
+                        if (!uaString) {
+                            uaString = browserFrame.dataset.ua || 
+                                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36';
+                        }
+                        break;
+                }
+                
+                // 存储当前UA
+                browserFrame.dataset.ua = uaString;
+                currentUa.textContent = `UA: ${uaString.substring(0, 80)}${uaString.length > 80 ? '...' : ''}`;
+                
+                // 通过Service Worker设置UA
+                if (serviceWorkerActive) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SET_UA',
+                        ua: uaString
+                    });
+                }
+                
+                console.log('User-Agent已设置为:', uaString);
+            }
+            
+            // 添加到历史记录
+            function addToHistory(title, url) {
+                // 添加到数组开头
+                history.unshift({
+                    title: title || url, 
+                    url: url,
+                    timestamp: new Date().toLocaleString()
+                });
+                
+                // 限制历史记录数量
+                if (history.length > 20) {
+                    history.pop();
+                }
+                
+                // 更新UI
+                updateHistoryList();
+            }
+            
+            // 更新历史记录列表
+            function updateHistoryList() {
+                historyList.innerHTML = '';
+                
+                history.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `
+                        <div class="favicon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="history-content">
+                            <div class="history-title">${item.title}</div>
+                            <div class="history-url">${item.url}</div>
+                        </div>
+                        <div class="history-time">${item.timestamp}</div>
+                    `;
+                    
+                    historyItem.addEventListener('click', function() {
+                        urlInput.value = item.url;
+                        loadUrl(item.url);
+                        historyPanel.classList.remove('open');
+                    });
+                    
+                    historyList.appendChild(historyItem);
+                });
+            }
+        });
+    </script>
+    
+    <script>
+        // Service Worker 代码
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(error => {
+                console.log('Service Worker 注册失败:', error);
+            });
+        }
+    </script>
+</body>
+</html>
