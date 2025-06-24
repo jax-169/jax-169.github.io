@@ -1,1 +1,1395 @@
-<h1>测试一下</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极狐浏览器</title>
+    <style>
+        :root {
+            --primary-color: #008373;
+            --background-color: #f8f9fa;
+            --foreground-color: #202124;
+            --tab-active-bg: #f5f5f5;
+            --tab-inactive-bg: #e8eaed;
+            --tab-close-hover: #ff1744;
+            --tab-bar-bg: #f0f0f0;
+            --border-color: #dadce0;
+            --input-bg: #ffffff;
+            --loading-spinner: #008373;
+            --error-color: #d93025;
+            --search-bg: #f5f5f5;
+            --search-border: #dadce0;
+            --quick-link-bg: #ffffff;
+            --box-shadow: 0 1px 6px rgba(32, 33, 36, 0.1);
+        }
+
+        .dark-theme {
+            --primary-color: #00b294;
+            --background-color: #202124;
+            --foreground-color: #e8eaed;
+            --tab-active-bg: #303134;
+            --tab-inactive-bg: #292a2d;
+            --tab-close-hover: #ff5269;
+            --tab-bar-bg: #2d2e30;
+            --border-color: #5f6368;
+            --input-bg: #303134;
+            --loading-spinner: #00b294;
+            --error-color: #ea4335;
+            --search-bg: #303134;
+            --search-border: #5f6368;
+            --quick-link-bg: #292a2d;
+            --box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--foreground-color);
+            transition: background-color 0.3s, color 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tab-bar {
+            display: flex;
+            background-color: var(--tab-bar-bg);
+            height: 48px;
+            padding: 0 10px;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .tabs-container {
+            display: flex;
+            height: 100%;
+            flex-grow: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            min-width: 120px;
+            max-width: 220px;
+            height: 36px;
+            padding: 0 12px;
+            background-color: var(--tab-inactive-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
+            margin: 0 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .tab:first-child {
+            margin-left: 0;
+        }
+
+        .tab.active {
+            background-color: var(--tab-active-bg);
+            border-bottom: none;
+            z-index: 10;
+        }
+
+        .tab-title {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 24px;
+        }
+
+        .tab-close {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+
+        .tab-close:hover {
+            opacity: 1;
+            background-color: var(--tab-close-hover);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            padding-left: 10px;
+        }
+
+        .btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 8px;
+            background-color: var(--tab-inactive-bg);
+            border: none;
+            font-size: 16px;
+            color: var(--foreground-color);
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--tab-active-bg);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        .iframe-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+        }
+
+        .iframe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .iframe-tab {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .iframe-tab.active {
+            display: block;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            transition: opacity 0.3s;
+        }
+
+        .dark-theme .loading-overlay {
+            background: rgba(32, 33, 36, 0.8);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--loading-spinner);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 55px;
+            right: 10px;
+            background-color: var(--tab-active-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            min-width: 320px;
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .settings-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--foreground-color);
+            font-size: 16px;
+        }
+
+        .settings-row {
+            margin-bottom: 15px;
+        }
+
+        .settings-row:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: var(--foreground-color);
+            opacity: 0.9;
+        }
+
+        .theme-switch {
+            display: flex;
+            height: 36px;
+            border-radius: 18px;
+            background-color: var(--tab-inactive-bg);
+            padding: 3px;
+            position: relative;
+        }
+
+        .theme-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            border-radius: 16px;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .theme-selector {
+            position: absolute;
+            top: 3px;
+            height: 30px;
+            width: calc(50% - 3px);
+            background-color: var(--input-bg);
+            border-radius: 16px;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-option:nth-child(1).active ~ .theme-selector {
+            transform: translateX(0);
+        }
+
+        .theme-option:nth-child(2).active ~ .theme-selector {
+            transform: translateX(100%);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--foreground-color);
+            font-size: 13px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 131, 116, 0.2);
+        }
+
+        .new-tab-screen {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: var(--background-color);
+            color: var(--foreground-color);
+            padding: 60px 20px 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo svg {
+            width: 42px;
+            height: 42px;
+            fill: var(--primary-color);
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 650px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .search-box {
+            display: flex;
+            width: 100%;
+            height: 52px;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            background: var(--search-bg);
+            border: 1px solid var(--search-border);
+            transition: all 0.3s ease;
+        }
+
+        .search-box:hover, .search-box:focus-within {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .search-engine {
+            flex-shrink: 0;
+            width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .search-engine:hover {
+            background-color: var(--primary-color);
+        }
+
+        .search-input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            padding: 0 20px;
+            font-size: 16px;
+            background: transparent;
+            color: var(--foreground-color);
+        }
+
+        .search-button {
+            width: 65px;
+            background-color: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: background-color 0.2s;
+        }
+
+        .search-button:hover {
+            background-color: var(--primary-color);
+        }
+
+        .search-button svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .search-engines-panel {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            background-color: var(--tab-active-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            min-width: 250px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .search-engines-panel.active {
+            display: block;
+        }
+
+        .search-engine-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .search-engine-item:hover {
+            background-color: var(--tab-inactive-bg);
+        }
+
+        .search-engine-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .search-engine-icon img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .search-engine-name {
+            font-size: 14px;
+            flex-grow: 1;
+        }
+
+        .search-engine-delete {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .search-engine-delete:hover {
+            background-color: var(--tab-inactive-bg);
+            opacity: 1;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--tab-active-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 99;
+            display: none;
+        }
+
+        .search-suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-suggestion-item:hover {
+            background-color: var(--tab-inactive-bg);
+        }
+
+        .error-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--error-color);
+            text-align: center;
+            padding: 20px;
+            z-index: 30;
+        }
+
+        .dark-theme .error-message {
+            background-color: rgba(32, 33, 36, 0.9);
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .error-action {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .error-action button {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .custom-engine-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 15px;
+            background-color: var(--tab-inactive-bg);
+            border-radius: 8px;
+        }
+
+        .custom-engine-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .custom-engine-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .custom-engine-row input {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .custom-engine-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .custom-engine-btn {
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .custom-engine-btn.cancel {
+            background-color: #6c757d;
+        }
+
+        .custom-engine-btn:hover {
+            opacity: 0.9;
+        }
+
+        .engine-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .settings-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .settings-btn {
+            flex: 1;
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .settings-btn:hover {
+            opacity: 0.9;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            background-color: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--foreground-color);
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        /* Scrollbar styling */
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: rgba(128, 128, 128, 0.4);
+            border-radius: 4px;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(128, 128, 128, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="tab-bar">
+        <div class="tabs-container" id="tabsContainer">
+            <!-- 标签页动态生成 -->
+        </div>
+        <div class="controls">
+            <button class="btn" id="addTab" title="新建标签页">+</button>
+            <button class="btn" id="settingsBtn" title="设置">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="currentColor" d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7-1h2v2H5v-2zm14 0h2v2h-2v-2zM7 17h2v2H7v-2zm10 0h2v2h-2v-2zM5 14h2v2H5v-2zm14 0h2v2h-2v-2zM7 5h2v2H7V5zm10 0h2v2h-2V5z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="iframe-container" id="iframeContainer">
+        <!-- 当前标签页内容在这里 -->
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-section">
+            <div class="settings-title">主题设置</div>
+            <div class="settings-row">
+                <div class="theme-switch">
+                    <div class="theme-option active" data-theme="light">浅色主题</div>
+                    <div class="theme-option" data-theme="dark">深色主题</div>
+                    <div class="theme-selector"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-title">搜索引擎设置</div>
+            <div class="settings-row">
+                <label>默认搜索引擎</label>
+                <div id="defaultSearchEngineList">
+                    <!-- 搜索引擎列表 -->
+                </div>
+            </div>
+            
+            <div class="settings-row">
+                <div class="custom-engine-form">
+                    <div class="custom-engine-title">添加自定义搜索引擎</div>
+                    <input type="text" id="engineName" placeholder="搜索引擎名称（如：知乎）">
+                    <input type="text" id="engineUrl" placeholder="搜索URL（如：https://www.zhihu.com/search?q={query}）">
+                    <input type="text" id="engineIcon" placeholder="图标URL（可选）">
+                    <div class="custom-engine-buttons">
+                        <button class="custom-engine-btn" id="addEngineBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="engine-icon" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                            添加
+                        </button>
+                        <button class="custom-engine-btn cancel" id="cancelEngineBtn">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-title">默认主页设置</div>
+            <div class="settings-row">
+                <input type="text" id="homepageInput" placeholder="输入默认主页 URL">
+            </div>
+        </div>
+        
+        <div class="settings-row settings-buttons">
+            <button class="settings-btn" id="saveSettings">保存设置</button>
+            <button class="settings-btn" id="closeSettings" style="background-color: #6c757d;">关闭</button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="white">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        <span id="notificationText">设置已保存！</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 浏览器品牌Logo - 极狐
+            const foxSvg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                    <path fill="currentColor" d="M464 64C490.5 64 512 85.49 512 112V176C512 202.5 490.5 224 464 224H448V160H464V112H448V64H464zM400 64C400 78.14 414.1 96 432 96C449.9 96 464 78.14 464 64H400zM448 224V160H464V224H448zM128 64C101.5 64 80 85.49 80 112V176C80 202.5 101.5 224 128 224H144V160H128V112H144V64H128zM192 64C177.9 78.14 193.9 96 208 96C226.1 96 240 78.14 240 64H192zM144 224V160H128V224H144zM464 288V352C464 378.5 442.5 400 416 400H352V352H416V288H352V224H416C442.5 224 464 245.5 464 272V288H464zM480 288H464V352H480V288zM352 352V400H416V352H352zM224 352V400H288V352H224zM96 352V400H160V352H96zM64 288C64 261.5 85.49 240 112 240H176V288H112V352H176V400H112C85.49 400 64 378.5 64 352V288H64zM80 288H96V352H80V288zM288 352H224V400H288V352zM192 288C192 314.5 213.5 336 240 336H272V288H240C213.5 288 192 309.5 192 336V288zM224 288V336H240C253.3 336 264 325.3 264 312C264 298.7 253.3 288 240 288H224zM224 288H192V336H224V288zM288 288V336H240V288H288zM240 288V336H272V288H240z"/>
+                </svg>
+            `;
+
+            // 默认搜索引擎（包含Bing）
+            const defaultEngines = [
+                {
+                    id: 'bing',
+                    name: 'Bing',
+                    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="24" height="24">
+                        <path fill="#008373" d="M0 320C0 195 75 87 188 32v576C75 553 0 445 0 320z"></path>
+                        <path fill="#008373" d="M188 32c113-55 244-29 330 63v482C432 557 301 583 188 528V32z"></path>
+                        <path fill="#00B294" d="M518 95c86 92 113 223 64 336-55 113-163 188-288 188h-1v-576h1c125 0 233 75 288 188 13-27 20-56 20-86 0-30-7-59-20-86-18-39-45-71-80-96-35-25-76-42-119-48-25-4-51-4-76 0-43 6-84 23-119 48-35 25-62 57-80 96C75 261 0 369 0 494v1h576V95c-17 0-33-3-49-8-15-4-29-11-41-19-9-7-18-14-25-22-7-8-13-17-19-26-10-18-16-38-18-59-1-10-1-20 0-30 2-10 5-20 9-29 3-6 7-12 11-17s9-9 14-13l8-6 7-4 7-3 8-1 8 1 8 3 7 4 8 6c5 4 9 8 13 13s8 11 11 17c4 9 7 19 9 29 1 10 1 20 0 30-2 21-8 41-18 59-6 9-12 18-19 26-7 8-16 15-25 22-12 8-26 15-41 19-16 5-32 8-49 8z"></path>
+                    </svg>`,
+                    url: 'https://www.bing.com/search?q={query}',
+                    isDefault: true
+                },
+                {
+                    id: 'google',
+                    name: 'Google',
+                    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"></path>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"></path>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"></path>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"></path>
+                    </svg>`,
+                    url: 'https://www.google.com/search?q={query}',
+                    isDefault: true
+                },
+                {
+                    id: 'baidu',
+                    name: '百度',
+                    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="24" height="24">
+                        <path fill="#2932E1" d="M512 1024c-282.77 0-512-229.23-512-512s229.23-512 512-512 512 229.23 512 512-229.23 512-512 512z"></path>
+                        <path fill="#FFFFFF" d="M512 573.44c51.5 0 93.61 42.11 93.61 93.61s-42.11 93.61-93.61 93.61-93.61-42.11-93.61-93.61 42.11-93.61 93.61-93.61z"></path>
+                        <path fill="#FFFFFF" d="M745.32 428.11c-24.78-15.34-47.1-42.4-47.1-72.96 0-29.28 27.8-53.26 62.72-53.26s62.72 24 62.72 53.26c0 31.36-22.4 58.24-47.1 72.96h40.96c24.78 0 44.8 20.02 44.8 44.8s-20.02 44.8-44.8 44.8h-109.44v-89.6h109.44z"></path>
+                        <path fill="#FFFFFF" d="M330.56 428.11c-24.78-15.34-47.1-42.4-47.1-72.96 0-29.28 27.8-53.26 62.72-53.26s62.72 24 62.72 53.26c0 31.36-22.4 58.24-47.1 72.96h40.96c24.78 0 44.8 20.02 44.8 44.8s-20.02 44.8-44.8 44.8h-109.44v-89.6h109.44z"></path>
+                        <path fill="#FFFFFF" d="M512 299.52c-24.78 0-44.8 20.02-44.8 44.8v53.76c0 24.78 20.02 44.8 44.8 44.8s44.8-20.02 44.8-44.8v-53.76c0-24.78-20.02-44.8-44.8-44.8z"></path>
+                    </svg>`,
+                    url: 'https://www.baidu.com/s?wd={query}',
+                    isDefault: true
+                }
+            ];
+
+            // 状态管理
+            const state = {
+                tabs: [],
+                activeTabId: null,
+                settings: {
+                    theme: 'light',
+                    homepage: 'about:newtab',
+                    engines: []
+                },
+                nextTabId: 1,
+                activeSearchEngine: 0
+            };
+
+            // DOM 元素引用
+            const tabsContainer = document.getElementById('tabsContainer');
+            const iframeContainer = document.getElementById('iframeContainer');
+            const addTabBtn = document.getElementById('addTab');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const homepageInput = document.getElementById('homepageInput');
+            const saveSettingsBtn = document.getElementById('saveSettings');
+            const closeSettingsBtn = document.getElementById('closeSettings');
+            const engineNameInput = document.getElementById('engineName');
+            const engineUrlInput = document.getElementById('engineUrl');
+            const engineIconInput = document.getElementById('engineIcon');
+            const addEngineBtn = document.getElementById('addEngineBtn');
+            const cancelEngineBtn = document.getElementById('cancelEngineBtn');
+            const defaultSearchEngineList = document.getElementById('defaultSearchEngineList');
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+
+            // 显示通知
+            function showNotification(message) {
+                notificationText.textContent = message;
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            // 初始化函数
+            function init() {
+                loadSettings();
+                applyTheme();
+                setupThemeSelector();
+                
+                // 添加初始标签页 - 默认打开主页
+                addTab(state.settings.homepage, true);
+                
+                // 渲染搜索引擎列表
+                renderSearchEngines();
+            }
+
+            // 添加标签页
+            function addTab(url, isActive = false) {
+                const tabId = 'tab-' + state.nextTabId++;
+                
+                // 创建新标签页对象
+                const tab = {
+                    id: tabId,
+                    url: url || state.settings.homepage,
+                    title: '新标签页',
+                    loading: true
+                };
+                
+                state.tabs.push(tab);
+                
+                // 如果是活动标签页或没有活动标签页
+                if (isActive || !state.activeTabId) {
+                    state.activeTabId = tabId;
+                }
+                
+                // 重新渲染标签页列表
+                renderTabs();
+                
+                // 渲染活动标签页的内容
+                renderActiveTabContent();
+                
+                return tab;
+            }
+
+            // 关闭标签页
+            function closeTab(tabId) {
+                const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
+                if (tabIndex !== -1) {
+                    // 如果关闭的是活动标签页，切换到上一个标签页
+                    if (state.activeTabId === tabId) {
+                        if (state.tabs.length > 1) {
+                            state.activeTabId = state.tabs[tabIndex - 1]?.id || state.tabs[tabIndex + 1]?.id;
+                        } else {
+                            state.activeTabId = null;
+                        }
+                    }
+                    
+                    // 从数组中移除标签页
+                    state.tabs.splice(tabIndex, 1);
+                    
+                    // 重新渲染标签页列表
+                    renderTabs();
+                    
+                    // 重新渲染活动标签页的内容
+                    renderActiveTabContent();
+                }
+            }
+
+            // 渲染标签页列表
+            function renderTabs() {
+                tabsContainer.innerHTML = '';
+                
+                state.tabs.forEach(tab => {
+                    const tabEl = document.createElement('div');
+                    tabEl.className = `tab ${tab.id === state.activeTabId ? 'active' : ''}`;
+                    tabEl.dataset.tabId = tab.id;
+                    
+                    // 显示域名作为标签页标题
+                    const tabTitle = getTabTitle(tab);
+                    
+                    tabEl.innerHTML = `
+                        <div class="tab-title">${tabTitle}</div>
+                        <div class="tab-close">×</div>
+                    `;
+                    
+                    // 标签页点击事件
+                    tabEl.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('tab-close')) {
+                            activateTab(tab.id);
+                        }
+                    });
+                    
+                    // 关闭按钮点击事件
+                    tabEl.querySelector('.tab-close').addEventListener('click', () => {
+                        closeTab(tab.id);
+                    });
+                    
+                    tabsContainer.appendChild(tabEl);
+                });
+            }
+            
+            // 获取标签页标题
+            function getTabTitle(tab) {
+                // 对于内置新标签页
+                if (tab.url === 'about:newtab' || tab.url === '') {
+                    return '新标签页';
+                }
+                
+                // 尝试解析URL
+                try {
+                    const domain = new URL(tab.url).hostname;
+                    return domain.replace('www.', '').replace('.com', '');
+                } catch (e) {
+                    return tab.url;
+                }
+            }
+
+            // 激活标签页
+            function activateTab(tabId) {
+                state.activeTabId = tabId;
+                renderTabs();
+                renderActiveTabContent();
+            }
+
+            // 渲染活动标签页内容
+            function renderActiveTabContent() {
+                iframeContainer.innerHTML = '';
+                
+                // 处理没有标签页的情况
+                if (!state.activeTabId) {
+                    renderNewTabScreen();
+                    return;
+                }
+                
+                const tab = state.tabs.find(t => t.id === state.activeTabId);
+                if (!tab) return;
+                
+                // 特殊页面：内置新标签页
+                if (tab.url === 'about:newtab' || tab.url === '') {
+                    renderNewTabScreen();
+                    return;
+                }
+                
+                // 创建iframe包装容器
+                const iframeWrapper = document.createElement('div');
+                iframeWrapper.className = 'iframe-wrapper';
+                iframeWrapper.dataset.tabId = tab.id;
+                
+                // 添加加载动画
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.innerHTML = '<div class="spinner"></div>';
+                iframeWrapper.appendChild(loadingOverlay);
+                
+                // 创建iframe
+                const iframe = document.createElement('iframe');
+                iframe.id = `iframe-${tab.id}`;
+                iframe.className = 'iframe-tab active';
+                iframe.src = tab.url;
+                iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms';
+                
+                iframeWrapper.appendChild(iframe);
+                iframeContainer.appendChild(iframeWrapper);
+                
+                // 监听iframe加载状态
+                iframe.addEventListener('load', () => {
+                    tab.loading = false;
+                    loadingOverlay.style.display = 'none';
+                    
+                    // 尝试获取标题
+                    try {
+                        tab.title = iframe.contentDocument.title || 
+                                    iframe.contentWindow.location.href ||
+                                    getTabTitle(tab);
+                    } catch (e) {
+                        // 跨域错误处理
+                        tab.title = getTabTitle(tab);
+                    }
+                    renderTabs();
+                });
+                
+                // 处理加载错误
+                iframe.addEventListener('error', () => {
+                    showError(tab, iframeWrapper, '无法加载页面');
+                });
+            }
+            
+            // 显示错误信息
+            function showError(tab, container, message) {
+                container.innerHTML = '';
+                
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.innerHTML = `
+                    <div class="error-icon">⚠️</div>
+                    <h3>${message}</h3>
+                    <p>URL: ${tab.url}</p>
+                    <div class="error-action">
+                        <button id="refreshBtn">刷新页面</button>
+                        <button id="closeTabBtn">关闭标签</button>
+                    </div>
+                `;
+                
+                container.appendChild(errorMessage);
+                
+                // 刷新按钮
+                errorMessage.querySelector('#refreshBtn').addEventListener('click', () => {
+                    renderActiveTabContent();
+                });
+                
+                // 关闭标签按钮
+                errorMessage.querySelector('#closeTabBtn').addEventListener('click', () => {
+                    closeTab(tab.id);
+                });
+            }
+            
+            // 渲染新标签页界面
+            function renderNewTabScreen() {
+                // 获取所有搜索引擎（默认 + 自定义）
+                const allEngines = [...defaultEngines, ...state.settings.engines];
+                
+                iframeContainer.innerHTML = `
+                    <div class="new-tab-screen">
+                        <div class="logo">
+                            ${foxSvg}
+                            <span>极狐浏览器</span>
+                        </div>
+                        <div class="search-container">
+                            <div class="search-box">
+                                <div class="search-engine" id="currentEngine">
+                                    ${allEngines[state.activeSearchEngine].icon}
+                                </div>
+                                <input type="text" class="search-input" id="searchInput" placeholder="输入搜索关键词">
+                                <button class="search-button" id="searchButton">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path fill="none" d="M0 0h24v24H0z"/>
+                                        <path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="search-engines-panel" id="enginesPanel">
+                                ${allEngines.length > 0 ? allEngines.map((engine, index) => `
+                                    <div class="search-engine-item" data-index="${index}">
+                                        <div class="search-engine-icon">${engine.icon}</div>
+                                        <div class="search-engine-name">${engine.name}</div>
+                                        ${engine.isDefault ? '' : `
+                                            <div class="search-engine-delete" data-engine-id="${engine.id}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                                                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
+                                                </svg>
+                                            </div>
+                                        `}
+                                    </div>
+                                `).join('') : '<div class="empty-state">没有可用的搜索引擎</div>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 绑定事件
+                setTimeout(() => {
+                    setupNewTabEvents();
+                }, 0);
+            }
+            
+            // 设置新标签页事件
+            function setupNewTabEvents() {
+                // 获取所有引擎
+                const allEngines = [...defaultEngines, ...state.settings.engines];
+                
+                // 搜索按钮事件
+                const searchButton = document.getElementById('searchButton');
+                const searchInput = document.getElementById('searchInput');
+                const enginesPanel = document.getElementById('enginesPanel');
+                const currentEngine = document.getElementById('currentEngine');
+                
+                // 搜索按钮点击事件
+                searchButton.addEventListener('click', () => performSearch(allEngines));
+                
+                // 搜索输入框事件
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        performSearch(allEngines);
+                    }
+                });
+                
+                // 搜索引擎选择器事件
+                currentEngine.addEventListener('click', (e) => {
+                    enginesPanel.classList.toggle('active');
+                    e.stopPropagation();
+                });
+                
+                // 搜索引擎选项事件
+                document.querySelectorAll('.search-engine-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('search-engine-delete')) return;
+                        
+                        const index = parseInt(item.dataset.index);
+                        state.activeSearchEngine = index;
+                        currentEngine.innerHTML = allEngines[index].icon;
+                        enginesPanel.classList.remove('active');
+                        e.stopPropagation();
+                    });
+                });
+                
+                // 删除自定义搜索引擎
+                document.querySelectorAll('.search-engine-delete').forEach(delBtn => {
+                    delBtn.addEventListener('click', (e) => {
+                        const engineId = delBtn.dataset.engineId;
+                        deleteCustomEngine(engineId);
+                        e.stopPropagation();
+                    });
+                });
+                
+                // 输入框自动聚焦
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
+            }
+            
+            // 执行搜索
+            function performSearch(allEngines) {
+                const searchInput = document.getElementById('searchInput');
+                const query = searchInput.value.trim();
+                if (!query) return;
+                
+                const engine = allEngines[state.activeSearchEngine];
+                const url = engine.url.replace('{query}', encodeURIComponent(query));
+                
+                // 创建新标签页并导航到搜索结果
+                const newTab = addTab(url, true);
+            }
+            
+            // 删除自定义引擎
+            function deleteCustomEngine(engineId) {
+                state.settings.engines = state.settings.engines.filter(e => e.id !== engineId);
+                saveSettingsToLocal();
+                showNotification('搜索引擎已删除');
+                
+                // 重新渲染引擎列表
+                renderSearchEngines();
+                
+                // 如果删除了当前使用的引擎，重置为Bing
+                const currentEngine = allEngines[state.activeSearchEngine];
+                if (currentEngine && currentEngine.id === engineId) {
+                    state.activeSearchEngine = 0;
+                }
+            }
+            
+            // 渲染搜索引擎列表
+            function renderSearchEngines() {
+                const allEngines = [...defaultEngines, ...state.settings.engines];
+                defaultSearchEngineList.innerHTML = '';
+                
+                allEngines.forEach((engine, index) => {
+                    const engineEl = document.createElement('div');
+                    engineEl.className = `search-engine-item ${state.activeSearchEngine === index ? 'active' : ''}`;
+                    engineEl.dataset.index = index;
+                    engineEl.innerHTML = `
+                        <div class="search-engine-icon">${engine.icon}</div>
+                        <div class="search-engine-name">${engine.name}</div>
+                    `;
+                    
+                    engineEl.addEventListener('click', () => {
+                        state.activeSearchEngine = index;
+                        renderSearchEngines();
+                    });
+                    
+                    defaultSearchEngineList.appendChild(engineEl);
+                });
+            }
+            
+            // 添加自定义搜索引擎
+            function addCustomEngine() {
+                const name = engineNameInput.value.trim();
+                const url = engineUrlInput.value.trim();
+                const icon = engineIconInput.value.trim();
+                
+                if (!name || !url) {
+                    showNotification('名称和URL不能为空');
+                    return;
+                }
+                
+                if (!url.includes('{query}')) {
+                    showNotification('搜索URL必须包含{query}占位符');
+                    return;
+                }
+                
+                // 创建自定义引擎
+                const newEngine = {
+                    id: 'custom-' + Date.now(),
+                    name,
+                    icon: icon ? `<img src="${icon}" alt="${name}">` : `<div>${name.charAt(0)}</div>`,
+                    url,
+                    isDefault: false
+                };
+                
+                // 添加到引擎列表
+                state.settings.engines.push(newEngine);
+                
+                // 清空输入框
+                engineNameInput.value = '';
+                engineUrlInput.value = '';
+                engineIconInput.value = '';
+                
+                // 显示通知
+                showNotification(`"${name}"搜索引擎已添加`);
+                
+                // 重新渲染搜索引擎列表
+                renderSearchEngines();
+            }
+
+            // 加载设置
+            function loadSettings() {
+                const savedSettings = localStorage.getItem('browserSettings');
+                const savedTabs = localStorage.getItem('browserTabs');
+                
+                if (savedSettings) {
+                    const parsed = JSON.parse(savedSettings);
+                    state.settings = {
+                        theme: parsed.theme || 'light',
+                        homepage: parsed.homepage || 'about:newtab',
+                        engines: parsed.engines || []
+                    };
+                }
+                
+                homepageInput.value = state.settings.homepage;
+                
+                // 仅加载设置，不恢复之前的标签页
+                state.tabs = [];
+                state.nextTabId = 1;
+                state.activeTabId = null;
+            }
+
+            // 保存设置到本地存储
+            function saveSettingsToLocal() {
+                state.settings.homepage = homepageInput.value;
+                localStorage.setItem('browserSettings', JSON.stringify(state.settings));
+            }
+
+            // 应用主题
+            function applyTheme() {
+                if (state.settings.theme === 'dark') {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+
+            // 设置主题选择器
+            function setupThemeSelector() {
+                themeOptions.forEach(option => {
+                    option.classList.remove('active');
+                    if (option.dataset.theme === state.settings.theme) {
+                        option.classList.add('active');
+                    }
+                    
+                    option.addEventListener('click', () => {
+                        themeOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        state.settings.theme = option.dataset.theme;
+                        applyTheme();
+                    });
+                });
+            }
+
+            // 事件监听
+            addTabBtn.addEventListener('click', () => {
+                addTab(state.settings.homepage, true);
+            });
+            
+            settingsBtn.addEventListener('click', (e) => {
+                settingsPanel.classList.toggle('active');
+                e.stopPropagation();
+            });
+            
+            saveSettingsBtn.addEventListener('click', () => {
+                saveSettingsToLocal();
+                showNotification('设置已保存');
+                setTimeout(() => {
+                    settingsPanel.classList.remove('active');
+                }, 1000);
+            });
+            
+            closeSettingsBtn.addEventListener('click', () => {
+                settingsPanel.classList.remove('active');
+            });
+            
+            addEngineBtn.addEventListener('click', addCustomEngine);
+            
+            cancelEngineBtn.addEventListener('click', () => {
+                engineNameInput.value = '';
+                engineUrlInput.value = '';
+                engineIconInput.value = '';
+            });
+            
+            // 点击外部关闭设置面板
+            document.addEventListener('click', (e) => {
+                if (!settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) {
+                    settingsPanel.classList.remove('active');
+                }
+            });
+            
+            // 在关闭页面时保存状态
+            window.addEventListener('beforeunload', () => {
+                saveSettingsToLocal();
+            });
+
+            // 初始化应用
+            init();
+        });
+    </script>
+</body>
+</html>
+
