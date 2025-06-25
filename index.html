@@ -846,7 +846,7 @@
                 activeTabId: null,
                 settings: {
                     theme: 'light',
-                    homepage: 's.html',
+                    homepage: '/s.html',
                     engines: []
                 },
                 nextTabId: 1,
@@ -888,21 +888,19 @@
                 
                 // 添加初始标签页 - 默认打开主页
                 addTab(state.settings.homepage, true);
+                
+                // 渲染搜索引擎列表
+                renderSearchEngines();
             }
 
             // 添加标签页
             function addTab(url, isActive = false) {
                 const tabId = 'tab-' + state.nextTabId++;
                 
-                // 将新标签页请求重定向到s.html
-                if (!url || url === 'about:newtab') {
-                    url = state.settings.homepage;
-                }
-                
                 // 创建新标签页对象
                 const tab = {
                     id: tabId,
-                    url: url,
+                    url: url || state.settings.homepage,
                     title: '新标签页',
                     loading: true
                 };
@@ -982,9 +980,9 @@
             
             // 获取标签页标题
             function getTabTitle(tab) {
-                // 对于新标签页
-                if (tab.url === state.settings.homepage) {
-                    return '主页';
+                // 对于内置新标签页
+                if (tab.url === '/s.html' || tab.url === '') {
+                    return '新标签页';
                 }
                 
                 // 尝试解析URL
@@ -1009,13 +1007,18 @@
                 
                 // 处理没有标签页的情况
                 if (!state.activeTabId) {
-                    // 无标签页时自动创建一个新标签页
-                    addTab(state.settings.homepage, true);
+                    renderNewTabScreen();
                     return;
                 }
                 
                 const tab = state.tabs.find(t => t.id === state.activeTabId);
                 if (!tab) return;
+                
+                // 特殊页面：内置新标签页
+                if (tab.url === 'about:newtab' || tab.url === '') {
+                    renderNewTabScreen();
+                    return;
+                }
                 
                 // 创建iframe包装容器
                 const iframeWrapper = document.createElement('div');
@@ -1091,60 +1094,139 @@
                 });
             }
             
-            // 加载设置
-            function loadSettings() {
-                const savedSettings = localStorage.getItem('browserSettings');
+            // 渲染新标签页界面
+            function renderNewTabScreen() {
+                // 获取所有搜索引擎（默认 + 自定义）
+                const allEngines = [...defaultEngines, ...state.settings.engines];
                 
-                if (savedSettings) {
-                    const parsed = JSON.parse(savedSettings);
-                    state.settings = {
-                        theme: parsed.theme || 'light',
-                        homepage: parsed.homepage || 's.html',
-                        engines: parsed.engines || []
-                    };
-                }
+                iframeContainer.innerHTML = `
+                    <div class="new-tab-screen">
+                        <div class="logo">
+                            ${foxSvg}
+                            <span>极狐浏览器</span>
+                        </div>
+                        <div class="search-container">
+                            <div class="search-box">
+                                <div class="search-engine" id="currentEngine">
+                                    ${allEngines[state.activeSearchEngine].icon}
+                                </div>
+                                <input type="text" class="search-input" id="searchInput" placeholder="输入搜索关键词">
+                                <button class="search-button" id="searchButton">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path fill="none" d="M0 0h24v24H0z"/>
+                                        <path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="search-engines-panel" id="enginesPanel">
+                                ${allEngines.length > 0 ? allEngines.map((engine, index) => `
+                                    <div class="search-engine-item" data-index="${index}">
+                                        <div class="search-engine-icon">${engine.icon}</div>
+                                        <div class="search-engine-name">${engine.name}</div>
+                                        ${engine.isDefault ? '' : `
+                                            <div class="search-engine-delete" data-engine-id="${engine.id}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                                                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
+                                                </svg>
+                                            </div>
+                                        `}
+                                    </div>
+                                `).join('') : '<div class="empty-state">没有可用的搜索引擎</div>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
                 
-                homepageInput.value = state.settings.homepage;
+                // 绑定事件
+                setTimeout(() => {
+                    setupNewTabEvents();
+                }, 0);
+            }
+            
+            // 设置新标签页事件
+            function setupNewTabEvents() {
+                // 获取所有引擎
+                const allEngines = [...defaultEngines, ...state.settings.engines];
                 
-                // 仅加载设置，不恢复之前的标签页
-                state.tabs = [];
-                state.nextTabId = 1;
-                state.activeTabId = null;
-            }
-
-            // 保存设置到本地存储
-            function saveSettingsToLocal() {
-                state.settings.homepage = homepageInput.value;
-                localStorage.setItem('browserSettings', JSON.stringify(state.settings));
-            }
-
-            // 应用主题
-            function applyTheme() {
-                if (state.settings.theme === 'dark') {
-                    document.body.classList.add('dark-theme');
-                } else {
-                    document.body.classList.remove('dark-theme');
-                }
-            }
-
-            // 设置主题选择器
-            function setupThemeSelector() {
-                const themeOptions = document.querySelectorAll('.theme-option');
-                themeOptions.forEach(option => {
-                    option.classList.remove('active');
-                    if (option.dataset.theme === state.settings.theme) {
-                        option.classList.add('active');
+                // 搜索按钮事件
+                const searchButton = document.getElementById('searchButton');
+                const searchInput = document.getElementById('searchInput');
+                const enginesPanel = document.getElementById('enginesPanel');
+                const currentEngine = document.getElementById('currentEngine');
+                
+                // 搜索按钮点击事件
+                searchButton.addEventListener('click', () => performSearch(allEngines));
+                
+                // 搜索输入框事件
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        performSearch(allEngines);
                     }
-                    
-                    option.addEventListener('click', () => {
-                        themeOptions.forEach(opt => opt.classList.remove('active'));
-                        option.classList.add('active');
-                        state.settings.theme = option.dataset.theme;
-                        applyTheme();
+                });
+                
+                // 搜索引擎选择器事件
+                currentEngine.addEventListener('click', (e) => {
+                    enginesPanel.classList.toggle('active');
+                    e.stopPropagation();
+                });
+                
+                // 搜索引擎选项事件
+                document.querySelectorAll('.search-engine-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('search-engine-delete')) return;
+                        
+                        const index = parseInt(item.dataset.index);
+                        state.activeSearchEngine = index;
+                        currentEngine.innerHTML = allEngines[index].icon;
+                        enginesPanel.classList.remove('active');
+                        e.stopPropagation();
                     });
                 });
+                
+                // 删除自定义搜索引擎
+                document.querySelectorAll('.search-engine-delete').forEach(delBtn => {
+                    delBtn.addEventListener('click', (e) => {
+                        const engineId = delBtn.dataset.engineId;
+                        deleteCustomEngine(engineId);
+                        e.stopPropagation();
+                    });
+                });
+                
+                // 输入框自动聚焦
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
             }
-
+            
+            // 执行搜索
+            function performSearch(allEngines) {
+                const searchInput = document.getElementById('searchInput');
+                const query = searchInput.value.trim();
+                if (!query) return;
+                
+                const engine = allEngines[state.activeSearchEngine];
+                const url = engine.url.replace('{query}', encodeURIComponent(query));
+                
+                // 创建新标签页并导航到搜索结果
+                const newTab = addTab(url, true);
+            }
+            
+            // 删除自定义引擎
+            function deleteCustomEngine(engineId) {
+                state.settings.engines = state.settings.engines.filter(e => e.id !== engineId);
+                saveSettingsToLocal();
+                showNotification('搜索引擎已删除');
+                
+                // 重新渲染引擎列表
+                renderSearchEngines();
+                
+                // 如果删除了当前使用的引擎，重置为Bing
+                const currentEngine = allEngines[state.activeSearchEngine];
+                if (currentEngine && currentEngine.id === engineId) {
+                    state.activeSearchEngine = 0;
+                }
+            }
+            
             // 渲染搜索引擎列表
             function renderSearchEngines() {
                 const allEngines = [...defaultEngines, ...state.settings.engines];
@@ -1208,6 +1290,60 @@
                 renderSearchEngines();
             }
 
+            // 加载设置
+            function loadSettings() {
+                const savedSettings = localStorage.getItem('browserSettings');
+                const savedTabs = localStorage.getItem('browserTabs');
+                
+                if (savedSettings) {
+                    const parsed = JSON.parse(savedSettings);
+                    state.settings = {
+                        theme: parsed.theme || 'light',
+                        homepage: parsed.homepage || 'about:newtab',
+                        engines: parsed.engines || []
+                    };
+                }
+                
+                homepageInput.value = state.settings.homepage;
+                
+                // 仅加载设置，不恢复之前的标签页
+                state.tabs = [];
+                state.nextTabId = 1;
+                state.activeTabId = null;
+            }
+
+            // 保存设置到本地存储
+            function saveSettingsToLocal() {
+                state.settings.homepage = homepageInput.value;
+                localStorage.setItem('browserSettings', JSON.stringify(state.settings));
+            }
+
+            // 应用主题
+            function applyTheme() {
+                if (state.settings.theme === 'dark') {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+
+            // 设置主题选择器
+            function setupThemeSelector() {
+                themeOptions.forEach(option => {
+                    option.classList.remove('active');
+                    if (option.dataset.theme === state.settings.theme) {
+                        option.classList.add('active');
+                    }
+                    
+                    option.addEventListener('click', () => {
+                        themeOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        state.settings.theme = option.dataset.theme;
+                        applyTheme();
+                    });
+                });
+            }
+
             // 事件监听
             addTabBtn.addEventListener('click', () => {
                 addTab(state.settings.homepage, true);
@@ -1256,4 +1392,3 @@
     </script>
 </body>
 </html>
-//该页面由deepseek编写
