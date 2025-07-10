@@ -1,42 +1,61 @@
 # ==================================================
-# 核心配置（已修复）
+# 核心配置
 # ==================================================
 theme: jekyll-theme-chirpy
-lang: zh-CN
-timezone: Asia/Shanghai
-title: "Jax的技术博客"
-tagline: "探索与创造的数字空间"
-url: "https://jax-169.github.io"
-baseurl: ""
+lang: zh-CN  # 中文语言
+timezone: Asia/Shanghai  # 北京时间
+title: "abc"  # 博客主标题
+tagline: "def"  # 副标题
+url: "https://jax-169.github.io"  # GitHub Pages地址
+baseurl: ""  # 保持为空
 
 github:
-  username: jax-169
+  username: jax-169  # GitHub用户名
 
 # ==================================================
-# 个人信息（已更新）
+# 用户信息
 # ==================================================
 social:
-  name: "Jax"
-  email: "q_398@foxmail.com"
+  name: Jax
+  email: q_398@foxmail.com  # 您的邮箱
   links:
-    - "https://github.com/jax-169"
+    - title: GitHub
+      url: "https://github.com/jax-169"
 
 # ==================================================
-# 主题功能配置
+# 主题外观
 # ==================================================
-avatar: "/1749958354868.webp"
-toc: true
-theme_mode: 
-paginate: 5
+avatar: /1749958354868.webp  # 头像路径（根目录）
+toc: true  # 启用文章目录
+theme_mode:  # 可选：light（浅色）或dark（深色）
+paginate: 5  # 每页显示文章数量
 
+# ==================================================
+# Giscus评论系统配置（根据截图完整参数）
+# ==================================================
 comments:
-  provider: # 已禁用
-
-description: >
-  Jax的个人技术博客与创作空间
+  active: giscus
+  giscus:
+    repo: "jax-169/jax-169.github.io"
+    repo_id: "R_kgDOPKLxyg"  # 截图中的repo_id
+    category: "General"  # 截图中的分类名
+    category_id: "DIC_kwDOPKLxys4CsxNO"  # 截图中的category_id
+    mapping: "pathname"  # 路径映射方式
+    strict: "0"  # 严格模式
+    reactions_enabled: "1"  # 启用反应表情
+    emit_metadata: "0"  # 元数据发射
+    input_position: "bottom"  # 输入框位置
+    theme: "preferred_color_scheme"  # 跟随系统主题
+    lang: "zh-CN"  # 中文界面
+    loading: "lazy"  # 懒加载（重要优化！）
 
 # ==================================================
-# 保留默认配置（无需修改）
+# 优化配置
+# ==================================================
+description: "Jax的个人技术博客"
+
+# ==================================================
+# 高级功能
 # ==================================================
 pwa:
   enabled: true
@@ -44,29 +63,9 @@ pwa:
     enabled: true
     deny_paths: []
 
-collections:
-  tabs:
-    output: true
-    sort_by: order
-
-defaults:
-  - scope:
-      path: ""
-      type: posts
-    values:
-      layout: post
-      comments: true
-      toc: true
-  - scope:
-      path: _drafts
-    values:
-      comments: false
-  - scope:
-      path: ""
-      type: tabs
-    values:
-      layout: page
-
+# ==================================================
+# 保持以下配置不变
+# ==================================================
 jekyll-archives:
   enabled: [categories, tags]
   layouts:
@@ -75,6 +74,17 @@ jekyll-archives:
   permalinks:
     tag: /tags/:name/
     category: /categories/:name/
+
+kramdown:
+  footnote_backlink: "&#8617;&#xfe0e;"
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
 
 exclude:
   - "*.gem"
