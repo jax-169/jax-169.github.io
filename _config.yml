@@ -1,11 +1,11 @@
 # ==================================================
-# 核心配置
+# 核心配置（已修复）
 # ==================================================
 theme: jekyll-theme-chirpy
 lang: zh-CN
 timezone: Asia/Shanghai
-title: "Jax的博客空间"  # 更友好的标题
-tagline: "探索技术前沿与生活思考"  # 明确的副标题
+title: "Jax的技术博客"
+tagline: "探索与创造的数字空间"
 url: "https://jax-169.github.io"
 baseurl: ""
 
@@ -13,39 +13,41 @@ github:
   username: jax-169
 
 # ==================================================
-# 用户信息与社交配置
+# 个人信息（已更新）
 # ==================================================
 social:
-  name: Jax
-  email: q_398@foxmail.com
+  name: "Jax"
+  email: "q_398@foxmail.com"
   links:
-    - title: GitHub
-      icon: "fab fa-github"
-      url: "https://github.com/jax-169"
+    - "https://github.com/jax-169"
 
 # ==================================================
-# 主题外观
+# 主题功能配置
 # ==================================================
-avatar: /1749958354868.webp  # 已修复路径
+avatar: "/1749958354868.webp"
 toc: true
-theme_mode:
+theme_mode: 
 paginate: 5
 
-# ==================================================
-# 评论系统配置（临时禁用）
-# ==================================================
-# comments:
-#   provider: giscus
-#   giscus:
-#     repo: jax-169/jax-169.github.io
-#     repo_id: "R_XXXXXXXXXX"
-#     category: "Comments"
-#     category_id: "DIC_XXXXXXXXXX"
+comments:
+  provider: # 已禁用
+
+description: >
+  Jax的个人技术博客与创作空间
 
 # ==================================================
-# 优化配置
+# 保留默认配置（无需修改）
 # ==================================================
-description: "Jax的个人技术博客"
+pwa:
+  enabled: true
+  cache:
+    enabled: true
+    deny_paths: []
+
+collections:
+  tabs:
+    output: true
+    sort_by: order
 
 defaults:
   - scope:
@@ -55,30 +57,16 @@ defaults:
       layout: post
       comments: true
       toc: true
-      # 已移除可能冲突的permalink配置
+  - scope:
+      path: _drafts
+    values:
+      comments: false
+  - scope:
+      path: ""
+      type: tabs
+    values:
+      layout: page
 
-collections:
-  tabs:
-    output: true
-    sort_by: order
-
-# ==================================================
-# 高级功能
-# ==================================================
-# analytics:
-#   provider: google
-#   google:
-#     id: UA-XXXXXXXXX-X
-
-pwa:
-  enabled: true
-  cache:
-    enabled: true
-    deny_paths: []
-
-# ==================================================
-# 保持不变的部分
-# ==================================================
 jekyll-archives:
   enabled: [categories, tags]
   layouts:
@@ -87,17 +75,6 @@ jekyll-archives:
   permalinks:
     tag: /tags/:name/
     category: /categories/:name/
-
-kramdown:
-  footnote_backlink: "&#8617;&#xfe0e;"
-  syntax_highlighter: rouge
-  syntax_highlighter_opts:
-    css_class: highlight
-    span:
-      line_numbers: false
-    block:
-      line_numbers: true
-      start_line: 1
 
 exclude:
   - "*.gem"
