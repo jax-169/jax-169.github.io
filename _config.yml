@@ -2,58 +2,50 @@
 # 核心配置
 # ==================================================
 theme: jekyll-theme-chirpy
-lang: zh-CN  # 中文语言支持
-timezone: Asia/Shanghai  # 北京时间
-title: "⊙﹏⊙"  # 博客主标题
-tagline: "←_←"  # 副标题
-url: "https://jax-169.github.io"  # 您的仓库URL
-baseurl: ""  # 保持为空
+lang: zh-CN
+timezone: Asia/Shanghai
+title: "Jax的博客空间"  # 更友好的标题
+tagline: "探索技术前沿与生活思考"  # 明确的副标题
+url: "https://jax-169.github.io"
+baseurl: ""
 
 github:
-  username: jax-169  # 您的GitHub用户名
+  username: jax-169
 
 # ==================================================
 # 用户信息与社交配置
 # ==================================================
 social:
   name: Jax
-  email: q_398@foxmail.com  # 替换为您的邮箱
+  email: q_398@foxmail.com
   links:
     - title: GitHub
       icon: "fab fa-github"
       url: "https://github.com/jax-169"
-    # 添加更多社交媒体链接：
-    # - title: Twitter
-    #   icon: "fab fa-twitter"
-    #   url: "https://twitter.com/your_twitter"
 
 # ==================================================
 # 主题外观
 # ==================================================
-avatar: /1749958354868.webp # 头像路径
-toc: true  # 启用文章目录
-theme_mode:  # 可选：light（浅色）或dark（深色）
-paginate: 5  # 每页显示文章数量
+avatar: /1749958354868.webp  # 已修复路径
+toc: true
+theme_mode:
+paginate: 5
 
 # ==================================================
-# 评论系统配置（完成后取消注释）
+# 评论系统配置（临时禁用）
 # ==================================================
-comments:
-  provider: giscus
-  giscus:
-    repo: jax-169/jax-169.github.io
-    # 从giscus.app获取后填入 ↓
-    # repo_id: "R_XXXXXXXXXX" 
-    category: "Comments"
-    # category_id: "DIC_XXXXXXXXXX"
-    mapping: pathname
-    input_position: bottom
+# comments:
+#   provider: giscus
+#   giscus:
+#     repo: jax-169/jax-169.github.io
+#     repo_id: "R_XXXXXXXXXX"
+#     category: "Comments"
+#     category_id: "DIC_XXXXXXXXXX"
 
 # ==================================================
-# 优化配置（保持默认）
+# 优化配置
 # ==================================================
-description: >-
-  一个基于Jekyll-Chirpy主题的技术博客
+description: "Jax的个人技术博客"
 
 defaults:
   - scope:
@@ -63,7 +55,7 @@ defaults:
       layout: post
       comments: true
       toc: true
-      permalink: /posts/:title/
+      # 已移除可能冲突的permalink配置
 
 collections:
   tabs:
@@ -71,15 +63,13 @@ collections:
     sort_by: order
 
 # ==================================================
-# 高级功能（按需启用）
+# 高级功能
 # ==================================================
-# 1. 网站分析（取消注释并填入ID）
 # analytics:
 #   provider: google
 #   google:
 #     id: UA-XXXXXXXXX-X
 
-# 2. PWA离线支持
 pwa:
   enabled: true
   cache:
@@ -87,7 +77,7 @@ pwa:
     deny_paths: []
 
 # ==================================================
-# 保持以下配置不变 ↓
+# 保持不变的部分
 # ==================================================
 jekyll-archives:
   enabled: [categories, tags]
